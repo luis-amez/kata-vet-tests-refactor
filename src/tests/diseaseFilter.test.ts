@@ -4,15 +4,14 @@ describe('Disease filter', () => {
   it('filters cases when several diagnosis filters are applied together', () => {
     const expectedName1 = 'Chupito';
     const expectedName2 = 'Juliana';
-    const cases = [createCase(1, expectedName1), createCase(2, expectedName2), createCase(3, 'irrelevant-name')];
     const searchCriteria1 = 'Vías respiratorias altas';
     const searchCriteria2 = 'Cerebro';
-    const diagnoses = [
-      createDiagnosis(1, searchCriteria1),
-      createDiagnosis(2, searchCriteria2),
-      createDiagnosis(3, 'irrelevant-location'),
-    ];
-    const diseaseFilter = DiseaseFilter.create(cases, diagnoses);
+    const fixtures = casesWithDiagnoses()
+      .havingDiagnosisWithLocationAndCaseWithName(searchCriteria1, expectedName1)
+      .havingDiagnosisWithLocationAndCaseWithName(searchCriteria2, expectedName2)
+      .havingDiagnosisWithLocationAndCaseWithName('irrelevant-location', 'irrelevant-name')
+      .build();
+    const diseaseFilter = DiseaseFilter.create(fixtures.cases(), fixtures.diagnoses());
     diseaseFilter.addFilter(searchCriteria2);
     diseaseFilter.addFilter(searchCriteria1);
 
@@ -44,4 +43,29 @@ function createDiagnosis(id: number, location: string): Diagnosis {
     origin: 'irrelevant-origin',
     specie: 'irrelevant-specie',
   };
+}
+
+function casesWithDiagnoses() {
+  let diagnosisId = 0;
+  let diagnoses: Diagnosis[] = [];
+  let cases: Case[] = [];
+
+  const add = (location: string, patientName: string) => {
+    diagnosisId++;
+    diagnoses.push(createDiagnosis(diagnosisId, location));
+    cases.push(createCase(diagnosisId, patientName));
+  };
+
+  const builder = {
+    havingDiagnosisWithLocationAndCaseWithName: (location: string, patientName: string) => {
+      add(location, patientName);
+      return builder;
+    },
+    build: () => ({
+      cases: () => cases,
+      diagnoses: () => diagnoses,
+    }),
+  };
+
+  return builder;
 }
